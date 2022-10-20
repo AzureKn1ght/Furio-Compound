@@ -7,13 +7,18 @@ URL: https://katana.roninchain.com/#/farm
 
 // Import required node modules
 const scheduler = require("node-schedule");
+const nodemailer = require("nodemailer");
+const fetch = require("cross-fetch");
 const { ethers } = require("ethers");
 const figlet = require("figlet");
 require("dotenv").config();
 const fs = require("fs");
 
 // ABI for the furio vault contract
-const ABI = ["function compound() external returns (bool)"];
+const ABI = [
+  "function compound() external returns (bool)",
+  "function participantBalance(address) external view returns (uint256)",
+];
 
 // Import environment variables
 const VAULT = process.env.CONTRACT_ADR;
@@ -97,6 +102,7 @@ const FURCompound = async () => {
 
   // get wallets
   initWallets(1);
+  let report = [];
 
   // store last compound, schedule next
   restakes.previousRestake = new Date().toString();
@@ -112,15 +118,42 @@ const FURCompound = async () => {
       const result = await connection.contract.compound();
       const receipt = await result.wait();
 
+      // get the total balance currently locked in the vault
+      const b = await connection.contract.participantBalance(wallet.address);
+      const balance = ethers.utils.formatEther(b);
+
       // succeeded
       if (receipt) {
         console.log(`Wallet${wallet["index"]}:`, "success");
+        console.log(`Vault Balance: ${balance} FUR`);
+
+        const success = {
+          index: wallet.index,
+          wallet: wallet.address,
+          balance: balance,
+          compound: true,
+        };
+
+        report.push(success);
       }
     } catch (error) {
       console.log(`Wallet${wallet["index"]}:`, "failed!");
       console.error(error);
+
+      // failed
+      const fail = {
+        index: wallet.index,
+        wallet: wallet.address,
+        compound: false,
+      };
+
+      report.push(fail);
     }
   }
+
+  // report status daily
+  report.push(restakes);
+  sendReport(report);
 };
 
 // Job Scheduler Function
@@ -144,6 +177,59 @@ const storeData = async () => {
       console.error(err);
     } else {
       console.log("Data stored:\n", restakes);
+    }
+  });
+};
+
+// Get Furio Price Function
+const furioPrice = async () => {
+  try {
+    const url_string = process.env.PRICE_API;
+    const response = await fetch(url_string);
+    const price = await response.json();
+    console.log(price);
+    return price;
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const sendReport = async (report) => {
+  // get formatted date
+  let today = new Date();
+  const dd = String(today.getDate()).padStart(2, "0");
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const yyyy = today.getFullYear();
+  today = `${dd}/${mm}/${yyyy}`;
+
+  // get price of Furio
+  const price = await furioPrice();
+  report.push(price);
+  console.log(report);
+
+  // configure email server
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_ADDR,
+      pass: process.env.EMAIL_PW,
+    },
+  });
+
+  // setup mail params
+  const mailOptions = {
+    from: process.env.EMAIL_ADDR,
+    to: process.env.RECIPIENT,
+    subject: "Furio Report " + today,
+    text: JSON.stringify(report),
+  };
+
+  // send the email message
+  transporter.sendMail(mailOptions, function (error, info) {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log("Email sent: " + info.response);
     }
   });
 };
