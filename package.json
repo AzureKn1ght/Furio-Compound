@@ -1,0 +1,29 @@
+{
+  "name": "furio-compound",
+  "version": "1.0.0",
+  "description": "Furio-Compound",
+  "main": "furio.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AzureKn1ght/Furio-Compound.git"
+  },
+  "keywords": [],
+  "author": "AzureKn1ght",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AzureKn1ght/Furio-Compound/issues"
+  },
+  "homepage": "https://github.com/AzureKn1ght/Furio-Compound#readme",
+  "devDependencies": {
+    "eslint": "^8.25.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "ethers": "^5.7.2",
+    "figlet": "^1.5.2",
+    "node-schedule": "^2.1.0"
+  }
+}
