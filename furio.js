@@ -102,7 +102,9 @@ const FURCompound = async () => {
 
   // get wallets
   initWallets(1);
-  let report = [];
+
+  // storage array for sending reports
+  let report = ["Furio Report " + todayDate()];
 
   // store last compound, schedule next
   restakes.previousRestake = new Date().toString();
@@ -176,7 +178,7 @@ const storeData = async () => {
     if (err) {
       console.error(err);
     } else {
-      console.log("Data stored:\n", restakes);
+      console.log("Data stored:", restakes);
     }
   });
 };
@@ -194,13 +196,18 @@ const furioPrice = async () => {
   }
 };
 
-const sendReport = async (report) => {
-  // get formatted date
-  let today = new Date();
+// Current Date function
+const todayDate = () => {
+  const today = new Date();
   const dd = String(today.getDate()).padStart(2, "0");
   const mm = String(today.getMonth() + 1).padStart(2, "0");
   const yyyy = today.getFullYear();
-  today = `${dd}/${mm}/${yyyy}`;
+  return `${dd}/${mm}/${yyyy}`;
+};
+
+const sendReport = async (report) => {
+  // get the formatted date
+  const today = todayDate();
 
   // get price of Furio
   const price = await furioPrice();
@@ -221,7 +228,7 @@ const sendReport = async (report) => {
     from: process.env.EMAIL_ADDR,
     to: process.env.RECIPIENT,
     subject: "Furio Report " + today,
-    text: JSON.stringify(report),
+    text: JSON.stringify(report, null, 2),
   };
 
   // send the email message

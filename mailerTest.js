@@ -7,7 +7,7 @@ const furioPrice = async () => {
     const url_string = process.env.PRICE_API;
     const response = await fetch(url_string);
     const price = await response.json();
-    console.log(price);
+    console.log(JSON.stringify(price, null, 2));
 
     return price;
   } catch (error) {
@@ -41,7 +41,7 @@ const sendReport = async (report) => {
     from: process.env.EMAIL_ADDR,
     to: process.env.RECIPIENT,
     subject: "Furio Report " + today,
-    text: JSON.stringify(report),
+    text: JSON.stringify(report, null, 2),
   };
 
   // send the email message
@@ -53,3 +53,5 @@ const sendReport = async (report) => {
     }
   });
 };
+
+furioPrice();
