@@ -1,8 +1,8 @@
 /*
-- RON Compound - 
+- FUR Compound - 
 This strategy involves claiming farm reward (RON tokens) and swapping the rewards to proportional RON and WETH to create LP tokens and deposit the LP tokens into the farm on the Katana DEX for RON rewards, thereby compounding the daily RON yields. 
 
-URL: https://katana.roninchain.com/#/farm
+URL: https://app.furio.io/vault
 */
 
 // Import required node modules
@@ -101,7 +101,7 @@ const FURCompound = async () => {
   );
 
   // get wallets
-  initWallets(1);
+  initWallets(5);
 
   // storage array for sending reports
   let report = ["Furio Report " + todayDate()];
@@ -189,7 +189,6 @@ const furioPrice = async () => {
     const url_string = process.env.PRICE_API;
     const response = await fetch(url_string);
     const price = await response.json();
-    console.log(price);
     return price;
   } catch (error) {
     console.error(error);
