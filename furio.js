@@ -232,7 +232,7 @@ const sendReport = async (report) => {
   };
 
   // send the email message
-  transporter.sendMail(mailOptions, function (error, info) {
+  transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.log(error);
     } else {
