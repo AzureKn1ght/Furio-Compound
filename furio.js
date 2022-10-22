@@ -127,7 +127,7 @@ const FURCompound = async () => {
 
       // succeeded
       if (receipt) {
-        console.log(`Wallet${wallet["index"]}:`, "success");
+        console.log(`Wallet${wallet["index"]}: success`);
         console.log(`Vault Balance: ${balance} FUR`);
 
         const success = {
@@ -140,7 +140,7 @@ const FURCompound = async () => {
         report.push(success);
       }
     } catch (error) {
-      console.log(`Wallet${wallet["index"]}:`, "failed!");
+      console.log(`Wallet${wallet["index"]}: failed!`);
       console.error(error);
 
       // failed
@@ -205,6 +205,7 @@ const todayDate = () => {
   return `${dd}/${mm}/${yyyy}`;
 };
 
+// Send Report Function
 const sendReport = async (report) => {
   // get the formatted date
   const today = todayDate();
