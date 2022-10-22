@@ -20,10 +20,9 @@ const ABI = [
   "function participantBalance(address) external view returns (uint256)",
 ];
 
-// Import environment variables
+// Import the environment variables
 const VAULT = process.env.CONTRACT_ADR;
 const RPC_URL = process.env.BSC_RPC;
-var wallets = [];
 
 // Storage obj
 var restakes = {
@@ -62,6 +61,7 @@ const main = async () => {
 
 // Import wallet detail
 const initWallets = (n) => {
+  let wallets = [];
   for (let i = 1; i <= n; i++) {
     const wallet = {
       address: process.env["ADR_" + i],
@@ -70,6 +70,7 @@ const initWallets = (n) => {
     };
     wallets.push(wallet);
   }
+  return wallets;
 };
 
 // Ethers connect on each wallet
@@ -100,8 +101,8 @@ const FURCompound = async () => {
     })
   );
 
-  // get wallets
-  initWallets(5);
+  // get wallet detail from .env
+  const wallets = initWallets(5);
 
   // storage array for sending reports
   let report = ["Furio Report " + todayDate()];
@@ -226,7 +227,7 @@ const sendReport = async (report) => {
   const mailOptions = {
     from: process.env.EMAIL_ADDR,
     to: process.env.RECIPIENT,
-    subject: "Furio Report " + today,
+    subject: "Furio Report: " + today,
     text: JSON.stringify(report, null, 2),
   };
 
