@@ -18,9 +18,11 @@ const fs = require("fs");
 const ABI = [
   "function compound() external returns (bool)",
   "function participantBalance(address) external view returns (uint256)",
+  "function stakingAmountInUsdc(address) external view returns (uint256)",
 ];
 
 // Import the environment variables
+const POOL = "0x77F50D741997DbBBb112C58dec50315E2De8Da58";
 const VAULT = process.env.CONTRACT_ADR;
 const RPC_URL = process.env.BSC_RPC;
 
@@ -80,6 +82,7 @@ const connect = async (wallet) => {
   // Add connection properties
   connection.provider = new ethers.providers.JsonRpcProvider(RPC_URL);
   connection.wallet = new ethers.Wallet(wallet.key, connection.provider);
+  connection.furpool = new ethers.Contract(POOL, ABI, connection.wallet);
   connection.contract = new ethers.Contract(VAULT, ABI, connection.wallet);
 
   // connection established
@@ -139,6 +142,12 @@ const FURCompound = async () => {
 
         report.push(success);
       }
+
+      // furpool compound wallet
+      if (wallet["index"] === 5) {
+        const pool = await furPool(wallet);
+        report.push(pool);
+      }
     } catch (error) {
       console.log(`Wallet${wallet["index"]}: failed!`);
       console.error(error);
@@ -157,6 +166,47 @@ const FURCompound = async () => {
   // report status daily
   report.push(restakes);
   sendReport(report);
+};
+
+// Furpool Compound Function 
+const furPool = async (wallet) => {
+  try {
+    // connection using the current wallet
+    const connection = await connect(wallet);
+
+    // call the compound function and await the results
+    const result = await connection.furpool.compound();
+    const receipt = await result.wait();
+
+    // get the total balance currently locked in the vault
+    const b = await connection.furpool.stakingAmountInUsdc(wallet.address);
+    const balance = ethers.utils.formatEther(b);
+
+    // succeeded
+    if (receipt) {
+      console.log(`Furpool: success`);
+      console.log(`Balance: ${balance} USDC`);
+
+      const success = {
+        type: "Furpool",
+        balance: balance,
+        compound: true,
+      };
+
+      return success;
+    }
+  } catch (error) {
+    console.log(`Furpool: failed`);
+    console.error(error);
+
+    // failed
+    const fail = {
+      type: "Furpool",
+      compound: false,
+    };
+
+    return fail;
+  }
 };
 
 // Job Scheduler Function
