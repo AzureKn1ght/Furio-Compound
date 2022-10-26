@@ -119,6 +119,8 @@ const FURCompound = async () => {
     try {
       // connection using the current wallet
       const connection = await connect(wallet);
+      const mask =
+        wallet.address.slice(0, 5) + "..." + wallet.address.slice(-6);
 
       // call the compound function and await the results
       const result = await connection.contract.compound();
@@ -135,7 +137,7 @@ const FURCompound = async () => {
 
         const success = {
           index: wallet.index,
-          wallet: wallet.address,
+          wallet: mask,
           balance: balance,
           compound: true,
         };
@@ -151,11 +153,13 @@ const FURCompound = async () => {
     } catch (error) {
       console.log(`Wallet${wallet["index"]}: failed!`);
       console.error(error);
+      const mask =
+        wallet.address.slice(0, 5) + "..." + wallet.address.slice(-6);
 
       // failed
       const fail = {
         index: wallet.index,
-        wallet: wallet.address,
+        wallet: mask,
         compound: false,
       };
 
@@ -168,7 +172,7 @@ const FURCompound = async () => {
   sendReport(report);
 };
 
-// Furpool Compound Function 
+// Furpool Compound Function
 const furPool = async (wallet) => {
   try {
     // connection using the current wallet
