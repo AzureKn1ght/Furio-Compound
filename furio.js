@@ -109,7 +109,6 @@ const FURCompound = async () => {
 
   // storage array for sending reports
   let report = ["Furio Report " + todayDate()];
-  report.push("Compound Target: 190 FUR");
   let balances = [];
 
   // store last compound, schedule next
@@ -172,7 +171,7 @@ const FURCompound = async () => {
 
   // calculate the average wallet size
   const average = eval(balances.join("+")) / balances.length;
-  report.push({ average: average });
+  report.push({ average: average, target: "190 FUR" });
 
   // report status daily
   report.push(restakes);
