@@ -19,12 +19,13 @@ const ABI = [
   "function compound() external returns (bool)",
   "function participantBalance(address) external view returns (uint256)",
   "function stakingAmountInUsdc(address) external view returns (uint256)",
+  "function getRemainingLockedTime(address) public view returns (uint256)",
 ];
 
 // Import the environment variables
-const POOL = "0x77F50D741997DbBBb112C58dec50315E2De8Da58";
 const VAULT = process.env.CONTRACT_ADR;
 const RPC_URL = process.env.BSC_RPC;
+const POOL = process.env.POOL_ADR;
 
 // Storage obj
 var restakes = {
@@ -118,79 +119,112 @@ const FURCompound = async () => {
   // loop through for each wallet
   for (const wallet of wallets) {
     try {
-      // connection using the current wallet
-      const connection = await connect(wallet);
-      const mask =
-        wallet.address.slice(0, 5) + "..." + wallet.address.slice(-6);
-
-      // call the compound function and await the results
-      const result = await connection.contract.compound();
-      const receipt = await result.wait();
-
-      // get the total balance currently locked in the vault
-      const b = await connection.contract.participantBalance(wallet.address);
-      const balance = ethers.utils.formatEther(b);
-
-      // succeeded
-      if (receipt) {
-        console.log(`Wallet${wallet["index"]}: success`);
-        console.log(`Vault Balance: ${balance} FUR`);
-
-        const success = {
-          index: wallet.index,
-          wallet: mask,
-          balance: balance,
-          compound: true,
-        };
-
-        balances.push(parseFloat(balance));
-        report.push(success);
-      }
+      // furvault compound
+      const vault = await compound(wallet);
+      report.push(vault);
 
       // furpool compound wallet
       if (wallet["index"] === 5) {
         const pool = await furPool(wallet);
         report.push(pool);
       }
+
+      if (vault["balance"]) {
+        balances.push(parseFloat(vault.balance));
+      }
     } catch (error) {
-      console.log(`Wallet${wallet["index"]}: failed!`);
       console.error(error);
-      const mask =
-        wallet.address.slice(0, 5) + "..." + wallet.address.slice(-6);
-
-      // failed
-      const fail = {
-        index: wallet.index,
-        wallet: mask,
-        compound: false,
-      };
-
-      report.push(fail);
     }
   }
 
   // calculate the average wallet size
   const average = eval(balances.join("+")) / balances.length;
-  report.push({ average: average, target: "190 FUR" });
+  report.push({ average: average, target: "100 FUR" });
 
   // report status daily
   report.push(restakes);
   sendReport(report);
 };
 
+// Compound Individual Wallet
+const compound = async (wallet, tries = 1) => {
+  try {
+    // connection using the current wallet
+    const connection = await connect(wallet);
+    const mask = wallet.address.slice(0, 5) + "..." + wallet.address.slice(-6);
+
+    // set custom gasPrice
+    const overrideOptions = {
+      gasLimit: 317811,
+      gasPrice: ethers.utils.parseUnits("1.0", "gwei"),
+    };
+
+    // call the compound function and await the results
+    const result = await connection.contract.compound(overrideOptions);
+    const receipt = await result.wait();
+
+    // get the total balance currently locked in the vault
+    const b = await connection.contract.participantBalance(wallet.address);
+    const balance = ethers.utils.formatEther(b);
+
+    // succeeded
+    if (receipt) {
+      console.log(`Wallet${wallet["index"]}: success`);
+      console.log(`Vault Balance: ${balance} FUR`);
+
+      const success = {
+        index: wallet.index,
+        wallet: mask,
+        balance: balance,
+        compound: true,
+      };
+
+      return success;
+    }
+  } catch (error) {
+    console.log(`Wallet${wallet["index"]}: failed!`);
+    console.error(error);
+
+    // max 5 tries
+    if (tries > 5) {
+      // failed
+      const w = wallet.address.slice(0, 5) + "..." + wallet.address.slice(-6);
+      const failure = {
+        index: wallet.index,
+        wallet: w,
+        compound: false,
+      };
+
+      return failure;
+    }
+
+    // failed, retrying again...
+    console.log(`retrying(${tries})...`);
+    return await compound(wallet, ++tries);
+  }
+};
+
 // Furpool Compound Function
-const furPool = async (wallet) => {
+const furPool = async (wallet, tries = 1) => {
   try {
     // connection using the current wallet
     const connection = await connect(wallet);
 
+    // set custom gasPrice
+    const overrideOptions = {
+      gasLimit: 317811,
+      gasPrice: ethers.utils.parseUnits("1.0", "gwei"),
+    };
+
     // call the compound function and await the results
-    const result = await connection.furpool.compound();
+    const result = await connection.furpool.compound(overrideOptions);
     const receipt = await result.wait();
 
-    // get the total balance currently locked in the vault
+    // get the total balance and duration locked in the vault
+    const t = await connection.furpool.getRemainingLockedTime(wallet.address);
     const b = await connection.furpool.stakingAmountInUsdc(wallet.address);
     const balance = ethers.utils.formatEther(b);
+    const time = Number(t) / (3600 * 24);
 
     // succeeded
     if (receipt) {
@@ -200,6 +234,7 @@ const furPool = async (wallet) => {
       const success = {
         type: "Furpool",
         balance: balance,
+        locked: `${time} days`,
         compound: true,
       };
 
@@ -209,13 +244,20 @@ const furPool = async (wallet) => {
     console.log(`Furpool: failed`);
     console.error(error);
 
-    // failed
-    const fail = {
-      type: "Furpool",
-      compound: false,
-    };
+    // max 5 tries
+    if (tries > 5) {
+      // failed
+      const fail = {
+        type: "Furpool",
+        compound: false,
+      };
 
-    return fail;
+      return fail;
+    }
+
+    // failed, retrying again...
+    console.log(`retrying(${tries})...`);
+    return await furPool(wallet, ++tries);
   }
 };
 
