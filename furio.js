@@ -155,28 +155,37 @@ const compound = async (wallet, tries = 1) => {
 
     // set custom gasPrice
     const overrideOptions = {
-      gasLimit: 317811,
+      gasLimit: 999999,
       gasPrice: ethers.utils.parseUnits("1.0", "gwei"),
     };
 
     // call the compound function and await the results
     const result = await connection.contract.compound(overrideOptions);
-    const receipt = await result.wait();
+    const receipt = await connection.provider.waitForTransaction(
+      result.hash,
+      1,
+      300000
+    ); //timeout 5 mins
 
     // get the total balance currently locked in the vault
     const b = await connection.contract.participantBalance(wallet.address);
     const balance = ethers.utils.formatEther(b);
 
     // succeeded
-    if (receipt) {
+    if (receipt)
+    {
+      const b = await connection.provider.getBalance(wallet.address);
       console.log(`Wallet${wallet["index"]}: success`);
       console.log(`Vault Balance: ${balance} FUR`);
+      const bal = ethers.utils.formatEther(b);
 
       const success = {
         index: wallet.index,
         wallet: mask,
+        BNB: bal,
         balance: balance,
         compound: true,
+        tries: tries,
       };
 
       return success;
@@ -212,13 +221,17 @@ const furPool = async (wallet, tries = 1) => {
 
     // set custom gasPrice
     const overrideOptions = {
-      gasLimit: 317811,
+      gasLimit: 999999,
       gasPrice: ethers.utils.parseUnits("1.0", "gwei"),
     };
 
     // call the compound function and await the results
     const result = await connection.furpool.compound(overrideOptions);
-    const receipt = await result.wait();
+    const receipt = await connection.provider.waitForTransaction(
+      result.hash,
+      1,
+      300000
+    ); //timeout 5 mins
 
     // get the total balance and duration locked in the vault
     const t = await connection.furpool.getRemainingLockedTime(wallet.address);
@@ -236,6 +249,7 @@ const furPool = async (wallet, tries = 1) => {
         balance: balance,
         locked: `${time} days`,
         compound: true,
+        tries: tries,
       };
 
       return success;
