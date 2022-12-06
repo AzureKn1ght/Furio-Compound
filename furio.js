@@ -147,7 +147,7 @@ const FURCompound = async () => {
 };
 
 // Compound Individual Wallet
-const compound = async (wallet, tries = 1) => {
+const compound = async (wallet, tries = 1.0) => {
   try {
     // connection using the current wallet
     const connection = await connect(wallet);
@@ -156,7 +156,7 @@ const compound = async (wallet, tries = 1) => {
     // set custom gasPrice
     const overrideOptions = {
       gasLimit: 999999,
-      gasPrice: ethers.utils.parseUnits("1.0", "gwei"),
+      gasPrice: ethers.utils.parseUnits(tries.toString(), "gwei"),
     };
 
     // call the compound function and await the results
@@ -214,7 +214,7 @@ const compound = async (wallet, tries = 1) => {
 };
 
 // Furpool Compound Function
-const furPool = async (wallet, tries = 1) => {
+const furPool = async (wallet, tries = 1.0) => {
   try {
     // connection using the current wallet
     const connection = await connect(wallet);
@@ -222,7 +222,7 @@ const furPool = async (wallet, tries = 1) => {
     // set custom gasPrice
     const overrideOptions = {
       gasLimit: 999999,
-      gasPrice: ethers.utils.parseUnits("1.0", "gwei"),
+      gasPrice: ethers.utils.parseUnits(tries.toString(), "gwei"),
     };
 
     // call the compound function and await the results
