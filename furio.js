@@ -161,19 +161,20 @@ const compound = async (wallet, tries = 1.0) => {
 
     // call the compound function and await the results
     const result = await connection.contract.compound(overrideOptions);
-    const receipt = await connection.provider.waitForTransaction(
-      result.hash,
-      1,
-      300000
-    ); //timeout 5 mins
+    const receipt = result.wait();
+
+    // const receipt = await connection.provider.waitForTransaction(
+    //   result.hash,
+    //   1,
+    //   300000
+    // ); //timeout 5 mins
 
     // get the total balance currently locked in the vault
     const b = await connection.contract.participantBalance(wallet.address);
     const balance = ethers.utils.formatEther(b);
 
     // succeeded
-    if (receipt)
-    {
+    if (receipt) {
       const b = await connection.provider.getBalance(wallet.address);
       console.log(`Wallet${wallet["index"]}: success`);
       console.log(`Vault Balance: ${balance} FUR`);
@@ -227,11 +228,13 @@ const furPool = async (wallet, tries = 1.0) => {
 
     // call the compound function and await the results
     const result = await connection.furpool.compound(overrideOptions);
-    const receipt = await connection.provider.waitForTransaction(
-      result.hash,
-      1,
-      300000
-    ); //timeout 5 mins
+    const receipt = result.wait();
+
+    // const receipt = await connection.provider.waitForTransaction(
+    //   result.hash,
+    //   1,
+    //   300000
+    // ); //timeout 5 mins
 
     // get the total balance and duration locked in the vault
     const t = await connection.furpool.getRemainingLockedTime(wallet.address);
