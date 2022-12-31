@@ -310,6 +310,7 @@ const furioPrice = async () => {
     return price;
   } catch (error) {
     console.error(error);
+    return null;
   }
 };
 
