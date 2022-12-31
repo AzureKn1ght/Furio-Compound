@@ -161,13 +161,12 @@ const compound = async (wallet, tries = 1.0) => {
 
     // call the compound function and await the results
     const result = await connection.contract.compound(overrideOptions);
-    const receipt = result.wait();
-
-    // const receipt = await connection.provider.waitForTransaction(
-    //   result.hash,
-    //   1,
-    //   300000
-    // ); //timeout 5 mins
+    const receipt = await connection.provider.waitForTransaction(
+      result.hash,
+      1,
+      600000 * tries
+    ); //timeout
+    //const receipt = result.wait();
 
     // get the total balance currently locked in the vault
     const b = await connection.contract.participantBalance(wallet.address);
@@ -228,13 +227,12 @@ const furPool = async (wallet, tries = 1.0) => {
 
     // call the compound function and await the results
     const result = await connection.furpool.compound(overrideOptions);
-    const receipt = result.wait();
-
-    // const receipt = await connection.provider.waitForTransaction(
-    //   result.hash,
-    //   1,
-    //   300000
-    // ); //timeout 5 mins
+    const receipt = await connection.provider.waitForTransaction(
+      result.hash,
+      1,
+      600000 * tries
+    ); //timeout
+    // const receipt = result.wait();
 
     // get the total balance and duration locked in the vault
     const t = await connection.furpool.getRemainingLockedTime(wallet.address);
@@ -326,39 +324,43 @@ const todayDate = () => {
 
 // Send Report Function
 const sendReport = async (report) => {
-  // get the formatted date
-  const today = todayDate();
+  try {
+    // get the formatted date
+    const today = todayDate();
 
-  // get price of Furio
-  const price = await furioPrice();
-  report.push(price);
-  console.log(report);
+    // get price of Furio
+    const price = await furioPrice();
+    report.push(price);
+    console.log(report);
 
-  // configure email server
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_ADDR,
-      pass: process.env.EMAIL_PW,
-    },
-  });
+    // configure email server
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_ADDR,
+        pass: process.env.EMAIL_PW,
+      },
+    });
 
-  // setup mail params
-  const mailOptions = {
-    from: process.env.EMAIL_ADDR,
-    to: process.env.RECIPIENT,
-    subject: "Furio Report: " + today,
-    text: JSON.stringify(report, null, 2),
-  };
+    // setup mail params
+    const mailOptions = {
+      from: process.env.EMAIL_ADDR,
+      to: process.env.RECIPIENT,
+      subject: "Furio Report: " + today,
+      text: JSON.stringify(report, null, 2),
+    };
 
-  // send the email message
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.log(error);
-    } else {
-      console.log("Email sent: " + info.response);
-    }
-  });
+    // send the email message
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error(error);
+      } else {
+        console.log("Email sent: " + info.response);
+      }
+    });
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 main();
