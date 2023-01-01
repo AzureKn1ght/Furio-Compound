@@ -152,21 +152,24 @@ const compound = async (wallet, tries = 1.0) => {
     // connection using the current wallet
     const connection = await connect(wallet);
     const mask = wallet.address.slice(0, 5) + "..." + wallet.address.slice(-6);
+    const nonce = await connection.provider.getTransactionCount(wallet.address);
 
     // set custom gasPrice
     const overrideOptions = {
+      nonce: nonce,
       gasLimit: 999999,
       gasPrice: ethers.utils.parseUnits(tries.toString(), "gwei"),
     };
+    const m = Math.floor((30 * 60000) / tries);
 
     // call the compound function and await the results
     const result = await connection.contract.compound(overrideOptions);
     const receipt = await connection.provider.waitForTransaction(
       result.hash,
       1,
-      600000 * tries
+      m
     ); //timeout
-    //const receipt = result.wait();
+    // const receipt = result.wait();
 
     // get the total balance currently locked in the vault
     const b = await connection.contract.participantBalance(wallet.address);
@@ -218,19 +221,22 @@ const furPool = async (wallet, tries = 1.0) => {
   try {
     // connection using the current wallet
     const connection = await connect(wallet);
+    const nonce = await connection.provider.getTransactionCount(wallet.address);
 
     // set custom gasPrice
     const overrideOptions = {
+      nonce: nonce,
       gasLimit: 999999,
       gasPrice: ethers.utils.parseUnits(tries.toString(), "gwei"),
     };
+    const m = Math.floor((30 * 60000) / tries);
 
     // call the compound function and await the results
     const result = await connection.furpool.compound(overrideOptions);
     const receipt = await connection.provider.waitForTransaction(
       result.hash,
       1,
-      600000 * tries
+      m
     ); //timeout
     // const receipt = result.wait();
 
