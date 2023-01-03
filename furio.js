@@ -111,6 +111,7 @@ const FURCompound = async () => {
   // storage array for sending reports
   let report = ["Furio Report " + todayDate()];
   let balances = [];
+  let promises = [];
 
   // store last compound, schedule next
   restakes.previousRestake = new Date().toString();
@@ -118,17 +119,18 @@ const FURCompound = async () => {
 
   // loop through for each wallet
   for (const wallet of wallets) {
+    const vault = compound(wallet);
+    promises.push(vault);
+  }
+
+  // wait for all the promises to finish resolving
+  const results = await Promise.allSettled(promises);
+  for (const result of results) {
     try {
-      // furvault compound
-      const vault = await compound(wallet);
+      const vault = result.value;
       report.push(vault);
 
-      // furpool compound wallet
-      if (wallet["index"] === 5) {
-        const pool = await furPool(wallet);
-        report.push(pool);
-      }
-
+      // collate balances
       if (vault["balance"]) {
         balances.push(parseFloat(vault.balance));
       }
@@ -136,6 +138,10 @@ const FURCompound = async () => {
       console.error(error);
     }
   }
+
+  // furpool compound only for wallet 5
+  const pool = await furPool(wallets[4]);
+  report.push(pool);
 
   // calculate the average wallet size
   const average = eval(balances.join("+")) / balances.length;
@@ -160,7 +166,7 @@ const compound = async (wallet, tries = 1.0) => {
       gasLimit: 999999,
       gasPrice: ethers.utils.parseUnits(tries.toString(), "gwei"),
     };
-    const m = Math.floor((30 * 60000) / tries);
+    const m = Math.floor((120 * 60000) / tries);
 
     // call the compound function and await the results
     const result = await connection.contract.compound(overrideOptions);
@@ -229,7 +235,7 @@ const furPool = async (wallet, tries = 1.0) => {
       gasLimit: 999999,
       gasPrice: ethers.utils.parseUnits(tries.toString(), "gwei"),
     };
-    const m = Math.floor((30 * 60000) / tries);
+    const m = Math.floor((60 * 60000) / tries);
 
     // call the compound function and await the results
     const result = await connection.furpool.compound(overrideOptions);
