@@ -19,7 +19,7 @@ You could run it on your desktop just using [Node.js](https://github.com/nodejs/
 
 ### FUR Compound
 ```
-pm2 start furio.js -n "FUR"
+pm2 start furioClaim.js -n "FUR"
 pm2 save
 
 ```
