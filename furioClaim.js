@@ -34,6 +34,7 @@ var restakes = {
   previousRestake: "",
   nextRestake: "",
 };
+var report = {};
 
 // Main Function
 const main = async () => {
@@ -110,8 +111,10 @@ const FURCompound = async () => {
   // get wallet detail from .env
   const wallets = initWallets(5);
 
-  // storage array for sending reports
-  let report = ["Furio Report " + todayDate()];
+  // storage attributes for sending reports
+  report.title = "Furio Report " + todayDate();
+  report.actions = [];
+  report.furPool = [];
   let balances = [];
   let promises = [];
 
@@ -171,11 +174,11 @@ const FURCompound = async () => {
 
   // calculate the average wallet size
   const average = eval(balances.join("+")) / balances.length;
-  report.push({ average: average, target: "11111 FUR" });
+  report.consolidated = { average: average, target: "11111 FUR" };
 
   // report status daily
-  report.push(restakes);
-  sendReport(report);
+  report.schedule = restakes;
+  sendReport();
 };
 
 // Claim Individual Wallet
@@ -433,14 +436,15 @@ const todayDate = () => {
 };
 
 // Send Report Function
-const sendReport = async (report) => {
+const sendReport = async () => {
   try {
     // get the formatted date
     const today = todayDate();
+    report.title = "Furio Report " + today;
 
     // get price of Furio
     const price = await furioPrice();
-    report.push(price);
+    report.price = price;
     console.log(report);
 
     // configure email server
@@ -468,6 +472,9 @@ const sendReport = async (report) => {
         console.log("Email sent: " + info.response);
       }
     });
+
+    // clear var
+    report = {};
   } catch (error) {
     console.error(error);
   }
