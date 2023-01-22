@@ -171,7 +171,7 @@ const FURCompound = async () => {
 
   // calculate the average wallet size
   const average = eval(balances.join("+")) / balances.length;
-  report.push({ average: average });
+  report.push({ average: average, target: "11111 FUR" });
 
   // report status daily
   report.push(restakes);
