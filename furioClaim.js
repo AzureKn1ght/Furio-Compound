@@ -192,7 +192,7 @@ const claim = async (wallet, tries = 1.0) => {
     // set custom gasPrice
     const overrideOptions = {
       nonce: nonce,
-      gasLimit: 999999,
+      gasLimit: 9999999,
       gasPrice: ethers.utils.parseUnits(tries.toString(), "gwei"),
     };
     const m = Math.floor((120 * 60000) / tries);
