@@ -121,11 +121,11 @@ const FURCompound = async () => {
   // store last compound, schedule next
   restakes.previousRestake = new Date().toString();
   const date = new Date();
-  const d = date.getDay();
+  const d = date.getDate();
   scheduleNext(date);
 
-  // Sun, Mon & Tue only
-  const claimDay = d < 3;
+  // Claims only every 4 days
+  const claimDay = d % 4 == 0;
 
   // loop through for each wallet
   for (const wallet of wallets) {
