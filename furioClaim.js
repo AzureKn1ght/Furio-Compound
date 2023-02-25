@@ -24,6 +24,18 @@ const ABI = [
   "function getRemainingLockedTime(address) public view returns (uint256)",
 ];
 
+// Import the details for swapping
+const swapABI = [
+  "function swapExactTokensForETH(uint256,uint256,address[],address,uint256)",
+  "function getAmountsOut(uint, address[]) public view returns (uint[])",
+  "function balanceOf(address) view returns (uint256)",
+];
+const addresses = {
+  USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+  WBNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+  router: "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+};
+
 // Import the environment variables
 const VAULT = process.env.CONTRACT_ADR;
 const RPC_URL = process.env.BSC_RPC;
@@ -88,6 +100,18 @@ const connect = async (wallet) => {
   connection.wallet = new ethers.Wallet(wallet.key, connection.provider);
   connection.furpool = new ethers.Contract(POOL, ABI, connection.wallet);
   connection.contract = new ethers.Contract(VAULT, ABI, connection.wallet);
+
+  // Add pancakeswap contracts for swaps
+  connection.router = new ethers.Contract(
+    addresses.router,
+    swapABI,
+    connection.wallet
+  );
+  connection.usdc = new ethers.Contract(
+    addresses.USDC,
+    swapABI,
+    connection.wallet
+  );
 
   // connection established
   await connection.provider.getBalance(wallet.address);
@@ -204,6 +228,7 @@ const claim = async (wallet, tries = 1.0) => {
       1,
       m
     );
+    const url = "https://bscscan.com/tx/" + result.hash;
 
     // get the total balance currently locked in the vault
     const b = await connection.contract.participantBalance(wallet.address);
@@ -223,6 +248,7 @@ const claim = async (wallet, tries = 1.0) => {
         balance: balance,
         claimToPool: true,
         tries: tries,
+        url: url,
       };
 
       return success;
@@ -272,6 +298,7 @@ const compound = async (wallet, tries = 1.0) => {
       1,
       m
     );
+    const url = "https://bscscan.com/tx/" + result.hash;
 
     // get the total balance currently locked in the vault
     const b = await connection.contract.participantBalance(wallet.address);
@@ -291,6 +318,7 @@ const compound = async (wallet, tries = 1.0) => {
         balance: balance,
         compound: true,
         tries: tries,
+        url: url,
       };
 
       return success;
@@ -341,6 +369,7 @@ const furPool = async (wallet, tries = 1.0) => {
       1,
       m
     );
+    const url = "https://bscscan.com/tx/" + result.hash;
 
     // get the total balance and duration locked in the vault
     const t = await connection.furpool.getRemainingLockedTime(wallet.address);
@@ -353,6 +382,16 @@ const furPool = async (wallet, tries = 1.0) => {
       console.log(`Furpool: success`);
       console.log(`Balance: ${balance} USDC`);
 
+      // BUY BNB GAS WITH USDC
+      const date = new Date();
+      const d = date.getDay();
+
+      // Only on Mondays
+      let swapBNB = false;
+      if (d === 1) {
+        swapBNB = await swapUSDC(wallet);
+      }
+
       const success = {
         index: wallet.index,
         type: "Furpool",
@@ -361,6 +400,8 @@ const furPool = async (wallet, tries = 1.0) => {
         locked: `${time} days`,
         claim: true,
         tries: tries,
+        url: url,
+        swap: swapBNB,
       };
 
       return success;
@@ -385,6 +426,85 @@ const furPool = async (wallet, tries = 1.0) => {
     // failed, retrying again...
     console.log(`retrying(${tries})...`);
     return await furPool(wallet, ++tries);
+  }
+};
+
+const swapUSDC = async (wallet, tries = 1.0) => {
+  const w = wallet.address.slice(0, 5) + "..." + wallet.address.slice(-6);
+  try {
+    // connection using the current wallet
+    const connection = await connect(wallet);
+
+    // swap details needed for the transaction
+    const path = [addresses.USDC, addresses.WBNB];
+    const deadline = Date.now() + 1000 * 60 * 5;
+
+    // get the wallet balance amount of USDC to swap to BNB
+    const bal = await connection.usdc.balanceOf(wallet.address);
+    const rs = await connection.router.getAmountsOut(bal, path);
+    const ex = rs[rs.length - 1];
+
+    // calculate expected amount 1% slippage
+    const amountOutMin = ex.sub(ex.div(100));
+
+    // log details
+    const swap = {
+      wbnbAmt: ethers.utils.formatEther(amountOutMin),
+      usdcAmt: ethers.utils.formatEther(bal),
+    };
+    console.log(swap);
+
+    // call the USDC to BNB swap function and await the results
+    const result = await connection.router.swapExactTokensForETH(
+      bal,
+      amountOutMin,
+      path,
+      wallet.address,
+      deadline
+    );
+
+    // get transaction details, and wait for completion
+    const url = "https://bscscan.com/tx/" + result.hash;
+    const receipt = await result.wait();
+
+    // succeeded
+    if (receipt) {
+      const b = await connection.provider.getBalance(wallet.address);
+      console.log(`Wallet${wallet["index"]}: success`);
+      const bal = ethers.utils.formatEther(b);
+
+      const success = {
+        index: wallet.index,
+        wallet: w,
+        BNB: bal,
+        swapToBNB: true,
+        tries: tries,
+        swap: swap,
+        url: url,
+      };
+
+      return success;
+    }
+  } catch (error) {
+    console.log(`Wallet${wallet["index"]}: failed!`);
+    console.error(error);
+
+    // max 5 tries
+    if (tries > 5) {
+      // failed
+      const failure = {
+        index: wallet.index,
+        wallet: w,
+        swapToBNB: false,
+        err: error.toString(),
+      };
+
+      return failure;
+    }
+
+    // failed, retrying again...
+    console.log(`retrying(${tries})...`);
+    return await swapUSDC(wallet, ++tries);
   }
 };
 
