@@ -179,20 +179,22 @@ const FURCompound = async () => {
   }
   promises = [];
 
-  // execute the Pools afterwards
-  for (const wallet of wallets) {
-    const pool = furPool(wallet);
-    promises.push(pool);
-  }
+  // execute Pool
+  if (claimDay) {
+    for (const wallet of wallets) {
+      const pool = furPool(wallet);
+      promises.push(pool);
+    }
 
-  // wait for the Pools promises to finish resolving
-  const settles = await Promise.allSettled(promises);
-  for (const result of settles) {
-    try {
-      const pool = result.value;
-      report.furPool.push(pool);
-    } catch (error) {
-      console.error(error);
+    // wait for the Pools promises to finish resolving
+    const settles = await Promise.allSettled(promises);
+    for (const result of settles) {
+      try {
+        const pool = result.value;
+        report.furPool.push(pool);
+      } catch (error) {
+        console.error(error);
+      }
     }
   }
 
