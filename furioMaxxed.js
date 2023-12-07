@@ -227,7 +227,6 @@ const claim = async (wallet, tries = 1.0) => {
       console.log(`Wallet${wallet["index"]}: success`);
       console.log(`Vault Balance: ${balance} FUR`);
       const bal = ethers.utils.formatEther(b);
-      const pool = await furPool(wallet);
 
       const success = {
         index: wallet.index,
@@ -237,7 +236,6 @@ const claim = async (wallet, tries = 1.0) => {
         claimToPool: true,
         tries: tries,
         url: url,
-        furPool: pool,
       };
 
       return success;
