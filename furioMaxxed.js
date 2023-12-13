@@ -145,27 +145,17 @@ const FURCompound = async () => {
   let balances = [];
   let promises = [];
 
-  // Claims 11 times in 28 days
-  const r = restakes.count % 28;
-  const claimDay = r >= 1 && r <= 11;
-  restakes["count"] = restakes["count"] + 1;
-
   // store last compound, schedule the next action
   restakes.previousRestake = new Date().toString();
+  restakes["count"] = restakes["count"] + 1;
   const date = new Date();
   scheduleNext(date);
 
   // loop through for each wallet
   for (const wallet of wallets) {
-    if (claimDay) {
-      const action = claim(wallet);
-      report.mode = "claim";
-      promises.push(action);
-    } else {
-      const action = compound(wallet);
-      report.mode = "compound";
-      promises.push(action);
-    }
+    const action = claim(wallet);
+    report.mode = "claim";
+    promises.push(action);
   }
 
   // wait for the action promises to finish resolving
@@ -228,6 +218,16 @@ const claim = async (wallet, tries = 1.0) => {
       console.log(`Vault Balance: ${balance} FUR`);
       const bal = ethers.utils.formatEther(b);
 
+      // BUY BNB GAS WITH USDC
+      const date = new Date();
+      const d = date.getDay();
+
+      // Only on Mondays
+      let swapBNB = false;
+      if (d === 1) {
+        swapBNB = await swapUSDC(wallet);
+      }
+
       const success = {
         index: wallet.index,
         wallet: w,
@@ -236,6 +236,7 @@ const claim = async (wallet, tries = 1.0) => {
         claimToPool: true,
         tries: tries,
         url: url,
+        swap: swapBNB,
       };
 
       return success;
