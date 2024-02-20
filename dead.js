@@ -166,30 +166,31 @@ const FURCompound = async () => {
   }
   promises = [];
 
-  // loop through for each wallet
-  for (const wallet of wallets) {
-    const action = compound(wallet);
-    report.mode = "compound";
-    promises.push(action);
-  }
+  // VAULT IS NO LONG PROFITABLE
+  // // loop through for each wallet
+  // for (const wallet of wallets) {
+  //   const action = compound(wallet);
+  //   report.mode = "compound";
+  //   promises.push(action);
+  // }
 
-  // wait for the action promises to finish resolving
-  const results = await Promise.allSettled(promises);
-  for (const result of results) {
-    try {
-      const action = result.value;
-      report.actions.push(action);
-      if (action.balance) {
-        balances.push(parseFloat(action.balance));
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }
+  // // wait for the action promises to finish resolving
+  // const results = await Promise.allSettled(promises);
+  // for (const result of results) {
+  //   try {
+  //     const action = result.value;
+  //     report.actions.push(action);
+  //     if (action.balance) {
+  //       balances.push(parseFloat(action.balance));
+  //     }
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // }
 
-  // calculate the average wallet size
-  const average = eval(balances.join("+")) / balances.length;
-  report.consolidated = { average: average, target: "11111 FUR" };
+  // // calculate the average wallet size
+  // const average = eval(balances.join("+")) / balances.length;
+  // report.consolidated = { average: average, target: "11111 FUR" };
 
   // report status daily
   report.schedule = restakes;
